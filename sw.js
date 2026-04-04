@@ -1,7 +1,7 @@
 // build-marker: v1.0.40+40 (2026-04-02T22:36:50Z)
 // Simple offline-first service worker for Health Tracker
-const CACHE_NAME = 'health-tracker-v5';
-const CACHE = 'health-tracker-vX'; // increase this number
+const CACHE_NAME = 'health-tracker-beta';
+const CACHE = 'health-tracker-betaX'; // increase this number
 const CORE_ASSETS = [
   './',
   './index.html',
