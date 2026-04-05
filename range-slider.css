@@ -1,0 +1,96 @@
+/* range-slider.css
+   Full-track gradient slider (green → yellow → red)
+   Usage: add class="score-range" to <input type="range">
+*/
+
+input[type="range"].score-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px; /* touch friendly */
+  background: transparent;
+  margin: 4px 0;
+  cursor: pointer;
+}
+
+/* ================= WebKit (Chrome / Edge / Safari) ================= */
+
+input[type="range"].score-range::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid #223152;
+  background: linear-gradient(
+    90deg,
+    var(--ok) 0%,
+    var(--warn) 50%,
+    var(--danger) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+input[type="range"].score-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -6px; /* centers thumb on 10px track */
+  border-radius: 50%;
+  background: var(--text);
+  border: 2px solid rgba(230,238,252,0.9);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+}
+
+/* Focus ring */
+input[type="range"].score-range:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 4px rgba(75,163,255,0.25),
+    0 4px 14px rgba(0,0,0,0.35);
+}
+
+/* ================= Firefox ================= */
+
+input[type="range"].score-range::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid #223152;
+  background: linear-gradient(
+    90deg,
+    var(--ok) 0%,
+    var(--warn) 50%,
+    var(--danger) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* Firefox “filled” area — force same gradient so track stays uniform */
+input[type="range"].score-range::-moz-range-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--ok) 0%,
+    var(--warn) 50%,
+    var(--danger) 100%
+  );
+}
+
+input[type="range"].score-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text);
+  border: 2px solid rgba(230,238,252,0.9);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+}
+
+/* ================= Disabled ================= */
+
+input[type="range"].score-range:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+input[type="range"].score-range:disabled::-webkit-slider-thumb,
+input[type="range"].score-range:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+}
+``
