@@ -277,306 +277,75 @@ function resetZoom() {
   if (state.chart && state.chart.resetZoom) state.chart.resetZoom();
 }
 
-/* ---------------- Modal (beta IDs preserved) ---------------- */
-function openModal(id = null) {
-  state.editingId = id;
-  $("#entryModal").hidden = false;
+/*# Metrics Chart: show DATE only (no hour)*/
 
-  $("#modalTitle").textContent = id ? "Edit Entry" : "Add Entry";
-  $("#deleteEntry").hidden = !id;
+## What this changes
+- X-axis labels: `YYYY-MM-DD` only
+- Tooltip title: `YYYY-MM-DD` only
+- Keeps chronological ordering using your existing date+time sort
 
-  if (!id) {
-    $("#fDate").value = todayISO();
-    for (const m of CONFIG.metrics) {
-      if (m.inputId) $(`#${m.inputId}`).value = "";
-    }
-    $("#fNotes").value = "";
-    return;
-  }
+> Note: If you have multiple entries on the same date, the chart will show repeated date labels (one per entry). This preserves each entry as a separate point without using time text.
 
-  const entry = state.entries.find((x) => x.id === id);
-  if (!entry) {
-    closeModal();
-    toast("Error", "Entry not found.");
-    return;
-  }
+---
 
-  $("#fDate").value = entry.date;
-  for (const m of CONFIG.metrics) {
-    if (m.inputId) $(`#${m.inputId}`).value = entry[m.key] ?? "";
-  }
-  $("#fNotes").value = entry.notes ?? "";
-}
+## Patch (copy/paste)
 
-function closeModal() {
-  $("#entryModal").hidden = true;
-  state.editingId = null;
-}
+### 1) In `UI.refreshChart()` replace the `labels` line
+**Find:**
+```js
+const labels=rows.map(r=> r.date + (r.time ? (' ' + r.time) : '') );
+```
 
-function wireModal() {
-  $("#closeModal").addEventListener("click", closeModal);
-  $("#modalX").addEventListener("click", closeModal);
+**Replace with:**
+```js
+// Date-only labels (no hour)
+const labels = rows.map(r => r.date || '');
+```
 
-  $("#entryModal").addEventListener("click", (e) => {
-    if (e.target?.dataset?.close) closeModal();
-  });
+---
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !$("#entryModal").hidden) closeModal();
-  });
+### 2) Add (or update) tooltip + tick formatting to enforce date-only display
+In the `config` object inside `UI.refreshChart()`, replace your existing `config` with the block below **or** merge the indicated parts.
 
-  $("#deleteEntry").addEventListener("click", () => {
-    if (!state.editingId) return;
-    state.entries = state.entries.filter((x) => x.id !== state.editingId);
-    saveEntries();
-    closeModal();
-    renderAll();
-    toast("Deleted", "Entry removed.");
-  });
+**Find your current config (starts with `const config={ type:'line'...`) and update to:**
 
-  $("#entryForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    saveFromForm();
-  });
-}
-
-function saveFromForm() {
-  const date = $("#fDate").value;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    toast("Invalid", "Please choose a valid date.");
-    return;
-  }
-
-  const entry = {
-    id: state.editingId || crypto.randomUUID(),
-    date,
-    notes: $("#fNotes").value || "",
-  };
-
-  for (const m of CONFIG.metrics) {
-    if (!m.inputId) continue;
-    entry[m.key] = numOrNull($(`#${m.inputId}`).value);
-  }
-
-  const idx = state.entries.findIndex((x) => x.id === entry.id);
-  if (idx >= 0) state.entries[idx] = entry;
-  else state.entries.push(entry);
-
-  state.entries.sort((a, b) => (a.date < b.date ? 1 : -1));
-
-  saveEntries();
-  closeModal();
-  renderAll();
-  toast("Saved", "Entry saved.");
-}
-
-/* ---------------- CSV ---------------- */
-function csvHeader() {
-  return ["date", ...CONFIG.metrics.map((m) => m.key), "notes"];
-}
-
-function exportCSV() {
-  const header = csvHeader();
-  const esc = (s) => {
-    const str = String(s ?? "");
-    if (/[,"\n]/.test(str)) return `"${str.replaceAll('"', '""')}"`;
-    return str;
-  };
-
-  const rows = [header.join(",")];
-  const ordered = [...state.entries].slice().sort((a, b) => (a.date > b.date ? 1 : -1));
-
-  for (const e of ordered) {
-    rows.push([e.date, ...CONFIG.metrics.map((m) => e[m.key] ?? ""), esc(e.notes ?? "")].join(","));
-  }
-
-  downloadText(`health-tracker-${todayISO()}.csv`, rows.join("\n"), "text/csv");
-  toast("Export", "CSV downloaded.");
-}
-
-function parseCSV(text) {
-  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter((l) => l.trim() !== "");
-  if (lines.length < 2) return [];
-
-  const parseLine = (line) => {
-    const out = [];
-    let cur = "";
-    let inQ = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      const next = line[i + 1];
-
-      if (inQ) {
-        if (ch === '"' && next === '"') {
-          cur += '"';
-          i++;
-        } else if (ch === '"') {
-          inQ = false;
-        } else {
-          cur += ch;
+```js
+const config = {
+  type: 'line',
+  data: { labels, datasets },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#dbeafe' } },
+      annotation: { annotations },
+      tooltip: {
+        callbacks: {
+          // Ensure tooltip title is DATE only
+          title: (items) => {
+            const lab = items?.[0]?.label ?? '';
+            // If label contains anything extra, keep only first token
+            return String(lab).split(' ')[0];
+          }
         }
-      } else {
-        if (ch === '"') inQ = true;
-        else if (ch === ",") {
-          out.push(cur);
-          cur = "";
-        } else cur += ch;
       }
-    }
-    out.push(cur);
-    return out.map((s) => s.trim());
-  };
-
-  const header = parseLine(lines[0]).map((h) => h.toLowerCase());
-  const need = csvHeader();
-  const idx = Object.fromEntries(need.map((k) => [k, header.indexOf(k)]));
-
-  if (idx.date < 0) throw new Error("CSV must include a 'date' column.");
-
-  const imported = [];
-  for (let i = 1; i < lines.length; i++) {
-    const cols = parseLine(lines[i]);
-    const date = cols[idx.date] || "";
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-
-    const e = { id: crypto.randomUUID(), date, notes: "" };
-    for (const m of CONFIG.metrics) {
-      const j = idx[m.key];
-      e[m.key] = j >= 0 ? numOrNull(cols[j]) : null;
-    }
-    e.notes = idx.notes >= 0 ? cols[idx.notes] ?? "" : "";
-    imported.push(e);
+    },
+    scales: Object.assign(
+      {
+        x: {
+          ticks: {
+            color: '#9fb2d6',
+            callback: function(value) {
+              // Category scale provides the label via this.getLabelForValue
+              const lab = this.getLabelForValue(value);
+              return String(lab).split(' ')[0];
+            }
+          },
+          grid: { color: '#13213d' }
+        },
+        y: { ticks: { color: '#9fb2d6' }, grid: { color: '#13213d' } }
+      },
+      yAxes
+    )
   }
-  return imported;
-}
-
-function importCSVFile(file) {
-  const r = new FileReader();
-  r.onload = () => {
-    try {
-      const imported = parseCSV(String(r.result || ""));
-      if (!imported.length) return toast("Import", "No valid rows found.");
-
-      const byDate = new Map(state.entries.map((e) => [e.date, e]));
-      for (const e of imported) byDate.set(e.date, e);
-
-      state.entries = [...byDate.values()].sort((a, b) => (a.date < b.date ? 1 : -1));
-      saveEntries();
-      renderAll();
-      toast("Import", `Imported ${imported.length} row(s).`);
-    } catch (e) {
-      toast("Import failed", e.message || "Could not parse CSV.");
-    }
-  };
-  r.readAsText(file);
-}
-
-/* ---------------- PDF ---------------- */
-function exportPDF() {
-  const lib = window.jspdf;
-  if (!lib?.jsPDF) return toast("PDF", "PDF library not available.");
-
-  const doc = new lib.jsPDF({ unit: "pt", format: "letter" });
-  const left = 40;
-  let y = 48;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text(CONFIG.pdfTitle, left, y);
-
-  y += 18;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(`Generated: ${new Date().toLocaleString()}`, left, y);
-
-  y += 22;
-
-  const headers = ["Date", ...CONFIG.metrics.map((m) => m.label), "Notes"];
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text(headers.join("   |   "), left, y);
-  y += 12;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-
-  const ordered = [...state.entries].slice().sort((a, b) => (a.date > b.date ? 1 : -1));
-  for (const e of ordered) {
-    const line = [
-      e.date,
-      ...CONFIG.metrics.map((m) => (e[m.key] == null ? "" : fmt(m, e[m.key]))),
-      (e.notes || "").slice(0, 60),
-    ].join("   |   ");
-
-    doc.text(line, left, y);
-    y += 12;
-    if (y > 740) {
-      doc.addPage();
-      y = 48;
-    }
-  }
-
-  doc.save(`health-tracker-${todayISO()}.pdf`);
-  toast("Export", "PDF downloaded.");
-}
-
-/* ---------------- Download helper ---------------- */
-function downloadText(filename, text, mime = "text/plain") {
-  const blob = new Blob([text], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = el("a", { href: url, download: filename });
-  document.body.append(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-/* ---------------- PWA SW registration ---------------- */
-function registerSW() {
-  if (!("serviceWorker" in navigator)) return;
-  window.addEventListener("load", async () => {
-    try {
-      await navigator.serviceWorker.register("./sw.js", { scope: "./" });
-    } catch {
-      // ignore
-    }
-  });
-}
-
-/* ---------------- Wire buttons (beta IDs) ---------------- */
-function wireActions() {
-  $("#btnResetZoom").addEventListener("click", resetZoom);
-  $("#btnAdd").addEventListener("click", () => openModal(null));
-  $("#btnExportCSV").addEventListener("click", exportCSV);
-  $("#btnImportCSV").addEventListener("click", () => $("#fileInput").click());
-  $("#btnExportPDF").addEventListener("click", exportPDF);
-
-  $("#fileInput").addEventListener("change", (e) => {
-    const f = e.target.files?.[0];
-    if (f) importCSVFile(f);
-    e.target.value = "";
-  });
-}
-
-/* ---------------- Render all ---------------- */
-function renderAll() {
-  renderLegend();
-  buildTableHead();
-  renderTable();
-  renderChart();
-}
-
-/* ---------------- Init ---------------- */
-function init() {
-  state.entries = loadEntries();
-  $("#fDate").value = todayISO();
-
-  wireModal();
-  wireActions();
-  registerSW();
-
-  renderAll();
-}
-
-document.addEventListener("DOMContentLoaded", init);
+};
