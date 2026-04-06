@@ -1,48 +1,107 @@
-// build-marker: v1.0.40+40 (2026-04-02T22:36:50Z)
-// Simple offline-first service worker for Health Tracker
-const CACHE_NAME = 'health-tracker-beta';
-const CACHE = 'health-tracker-betaX'; // increase this number
+/* sw.js */
+'use strict';
+
+const CACHE_PREFIX = 'health-tracker';
 const CORE_ASSETS = [
   './',
   './index.html',
+  './app.js',
+  './range-slider.css',
   './manifest.webmanifest',
-  './sw.js',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './version.json',
+  // './offline.html' // if you add one
 ];
 
+// Cache name can be updated from version.json at install time.
+// Fallback to timestamp-based cache if fetch fails.
+let CACHE_NAME = `${CACHE_PREFIX}-v${Date.now()}`;
+
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS))
-  );
+  event.waitUntil((async () => {
+    try {
+      const res = await fetch('./version.json', { cache: 'no-store' });
+      if (res.ok) {
+        const v = await res.json();
+        const build = v.build || v.version || Date.now();
+        CACHE_NAME = `${CACHE_PREFIX}-v${build}`;
+      }
+    } catch { /* ignore */ }
+
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(CORE_ASSETS);
+    // Don’t auto-activate here; let the page decide via toast + SKIP_WAITING
+    // self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.map(key => key !== CACHE_NAME && caches.delete(key))
-    )).then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    // Clean old caches
+    const keys = await caches.keys();
+    await Promise.all(
+      keys
+        .filter(k => k.startsWith(CACHE_PREFIX + '-') && k !== CACHE_NAME)
+        .map(k => caches.delete(k))
+    );
+
+    await self.clients.claim();
+  })());
 });
 
+// Messaging support: SKIP_WAITING and GET_VERSION
+self.addEventListener('message', (event) => {
+  const msg = event.data;
+  if (!msg || !msg.type) return;
 
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  if (msg.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 
-  if (url.pathname.endsWith('/version.json')) {
-    event.respondWith(fetch(event.request));
-    return;
+  if (msg.type === 'GET_VERSION') {
+    event.source?.postMessage({ type: 'VERSION', cache: CACHE_NAME });
   }
 });
-``
-  // Cache-first for same-origin GET static assets
-  if (req.method === 'GET' && new URL(req.url).origin === location.origin) {
-    event.respondWith(
-      caches.match(req).then(cached => cached || fetch(req).then(res => {
-        const resClone = res.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(req, resClone));
-        return res;
-      }))
-    );
- };
+
+// Fetch strategies
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  const url = new URL(req.url);
+
+  // Only handle same-origin
+  if (url.origin !== self.location.origin) return;
+
+  // Navigation: Network-first (fresh HTML), fallback to cache
+  if (req.mode === 'navigate') {
+    event.respondWith((async () => {
+      try {
+        const fresh = await fetch(req);
+        const cache = await caches.open(CACHE_NAME);
+        cache.put('./index.html', fresh.clone());
+        return fresh;
+      } catch {
+        const cached = await caches.match('./index.html');
+        return cached || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+      }
+    })());
+    return;
+  }
+
+  // version.json: always network
+  if (url.pathname.endsWith('/version.json')) {
+    event.respondWith(fetch(req, { cache: 'no-store' }));
+    return;
+  }
+
+  // Static assets: cache-first, revalidate in background
+  event.respondWith((async () => {
+    const cached = await caches.match(req);
+    if (cached) return cached;
+
+    const res = await fetch(req);
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(req, res.clone());
+    return res;
+  })());
+});
