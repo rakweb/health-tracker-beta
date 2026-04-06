@@ -1,0 +1,57 @@
+name: Version Bump (Java App)
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read current version
+        id: current
+        run: |
+          VERSION=$(grep '^version=' src/main/resources/version.properties | cut -d= -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          OLD=${{ steps.current.outputs.version }}
+          BASE=$(echo $OLD | cut -d- -f1)
+          SUFFIX=$(echo $OLD | grep -o '\-.*' || true)
+
+          MAJOR=$(echo $BASE | cut -d. -f1)
+          MINOR=$(echo $BASE | cut -d. -f2)
+          PATCH=$(echo $BASE | cut -d. -f3)
+
+          PATCH=$((PATCH+1))
+
+          NEW="$MAJOR.$MINOR.$PATCH$SUFFIX"
+
+          echo "New version: $NEW"
+          sed -i "s/version=.*/version=$NEW/" src/main/resources/version.properties
+          echo "version=$NEW" >> $GITHUB_OUTPUT
+
+      - name: Commit version change
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git commit -am "chore: bump version to ${{ steps.bump.outputs.version }}"
+          git tag v${{ steps.bump.outputs.version }}
+          git push origin main --tags
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.version }}
+          name: Health Tracker Beta v${{ steps.bump.outputs.version }}
