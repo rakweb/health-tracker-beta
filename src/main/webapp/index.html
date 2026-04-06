@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Health Tracker Beta</title>
+</head>
+<body>
+
+<h1>Health Tracker</h1>
+
+<footer style="margin-top:40px;font-size:0.9em;color:#666;">
+    Version: <span id="app-version">Loading…</span>
+</footer>
+
+<script>
+fetch('/api/version')
+  .then(response => response.json())
+  .then(data => {
+      document.getElementById('app-version').innerText =
+        data.version + ' (Built ' + data.buildDate + ')';
+  })
+  .catch(() => {
+      document.getElementById('app-version').innerText = 'Unknown';
+  });
+</script>
+
+</body>
+</html>
