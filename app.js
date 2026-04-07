@@ -34,8 +34,7 @@ function registerSW() {
         });
       });
     })
-    .catch(e => console.error('SW registration failed', e));
-
+  
   navigator.serviceWorker.addEventListener('controllerchange', () => { window.location.reload(); });
 }
 
@@ -1373,7 +1372,7 @@ for (const id of ['entryModal', 'fieldsModal', 'thModal', 'optModal', 'bulkRemov
 // Defer init until window 'load' so deferred libs are ready
 window.addEventListener('load', async () => {
   registerSW();
-  bindSaveThresholds();
+ 
   await Actions.init();
   // If range slider helper exists, init it (no dependency)
   if (window.initScoreRanges) window.initScoreRanges();
