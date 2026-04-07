@@ -26,7 +26,7 @@ function registerSW() {
       navigator.serviceWorker.addEventListener('message', (evt) => {
         if (evt.data?.type === 'VERSION' && evt.data?.cache && swVersionSpan) swVersionSpan.textContent = evt.data.cache;
       });
-      (reg.active ? Promise.resolve() : navigator.serviceWorker.ready).then(sendGetVersion);
+     
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing; if (!nw) return;
         nw.addEventListener('statechange', () => {
