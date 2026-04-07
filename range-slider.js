@@ -1,96 +1,96 @@
-/* range-slider.css
-   Full-track gradient slider (green → yellow → red)
-   Usage: add class="score-range" to <input type="range">
-*/
+// range-slider.js
+// Optional: color the thumb based on value (0 green → max red).
+// Track is always gradient.
+// Usage: add class="score-range" to <input type="range"> and call initScoreRanges().
 
-input[type="range"].score-range {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 28px; /* touch friendly */
-  background: transparent;
-  margin: 4px 0;
-  cursor: pointer;
-}
+(function () {
+  'use strict';
 
-/* ================= WebKit (Chrome / Edge / Safari) ================= */
+  function lerp(a, b, t) {
+    return Math.round(a + (b - a) * t);
+  }
 
-input[type="range"].score-range::-webkit-slider-runnable-track {
-  height: 10px;
-  border-radius: 999px;
-  border: 1px solid #223152;
-  background: linear-gradient(
-    90deg,
-    var(--ok) 0%,
-    var(--warn) 50%,
-    var(--danger) 100%
-  );
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-}
+  function hexToRgb(hex) {
+    const h = String(hex || '#27d79b').replace('#', '').trim();
+    const full = (h.length === 3)
+      ? h.split('').map(x => x + x).join('')
+      : h;
 
-input[type="range"].score-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  margin-top: -6px; /* centers thumb on 10px track */
-  border-radius: 50%;
-  background: var(--text);
-  border: 2px solid rgba(230,238,252,0.9);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
-}
+    const n = parseInt(full, 16);
+    if (Number.isNaN(n)) {
+      return { r: 39, g: 215, b: 155 }; // safe fallback
+    }
 
-/* Focus ring */
-input[type="range"].score-range:focus-visible::-webkit-slider-thumb {
-  box-shadow:
-    0 0 0 4px rgba(75,163,255,0.25),
-    0 4px 14px rgba(0,0,0,0.35);
-}
+    return {
+      r: (n >> 16) & 255,
+      g: (n >> 8) & 255,
+      b: n & 255
+    };
+  }
 
-/* ================= Firefox ================= */
+  function mix(c1, c2, t) {
+    t = Math.max(0, Math.min(1, t));
+    return {
+      r: lerp(c1.r, c2.r, t),
+      g: lerp(c1.g, c2.g, t),
+      b: lerp(c1.b, c2.b, t)
+    };
+  }
 
-input[type="range"].score-range::-moz-range-track {
-  height: 10px;
-  border-radius: 999px;
-  border: 1px solid #223152;
-  background: linear-gradient(
-    90deg,
-    var(--ok) 0%,
-    var(--warn) 50%,
-    var(--danger) 100%
-  );
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-}
+  function rgbStr(c) {
+    return `rgb(${c.r},${c.g},${c.b})`;
+  }
 
-/* Firefox “filled” area — force same gradient so track stays uniform */
-input[type="range"].score-range::-moz-range-progress {
-  height: 10px;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    var(--ok) 0%,
-    var(--warn) 50%,
-    var(--danger) 100%
-  );
-}
+  function getThemeStops() {
+    const cs = getComputedStyle(document.documentElement);
 
-input[type="range"].score-range::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--text);
-  border: 2px solid rgba(230,238,252,0.9);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
-}
+    const ok = cs.getPropertyValue('--ok').trim() || '#27d79b';
+    const warn = cs.getPropertyValue('--warn').trim() || '#ffcc66';
+    const danger = cs.getPropertyValue('--danger').trim() || '#ff5c5c';
 
-/* ================= Disabled ================= */
+    return {
+      cOk: hexToRgb(ok),
+      cWarn: hexToRgb(warn),
+      cDanger: hexToRgb(danger)
+    };
+  }
 
-input[type="range"].score-range:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-input[type="range"].score-range:disabled::-webkit-slider-thumb,
-input[type="range"].score-range:disabled::-moz-range-thumb {
-  cursor: not-allowed;
-}
-``
+  // Set --thumbColor based on current value
+  function updateScoreRange(el) {
+    if (!el) return;
+
+    const min = Number(el.min ?? 0);
+    const max = Number(el.max ?? 10);
+    const val = Number(el.value ?? min);
+
+    if (max === min) return;
+
+    const mid = min + (max - min) / 2;
+    const { cOk, cWarn, cDanger } = getThemeStops();
+
+    let fill;
+    if (val <= mid) {
+      const t = (val - min) / (mid - min || 1);
+      fill = mix(cOk, cWarn, t);
+    } else {
+      const t = (val - mid) / (max - mid || 1);
+      fill = mix(cWarn, cDanger, t);
+    }
+
+    el.style.setProperty('--thumbColor', rgbStr(fill));
+  }
+
+  function initScoreRanges(root = document) {
+    root
+      .querySelectorAll('input[type="range"].score-range')
+      .forEach(el => {
+        updateScoreRange(el);
+        el.addEventListener('input', () => updateScoreRange(el), { passive: true });
+        el.addEventListener('change', () => updateScoreRange(el), { passive: true });
+      });
+  }
+
+  // Expose globals
+  window.updateScoreRange = updateScoreRange;
+  window.initScoreRanges = initScoreRanges;
+})();
