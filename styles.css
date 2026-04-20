@@ -1,5 +1,3 @@
-/* ====================== HEALTH TRACKER - Final Styles ====================== */
-
 :root {
   --bg: #0b1220;
   --card: #0e1628;
@@ -35,27 +33,21 @@ header { position:sticky; top:0; backdrop-filter:blur(8px); background:rgba(11,1
 
 .wrap { max-width:1200px; margin:0 auto; padding:12px 16px; }
 
-.card { 
-  background:var(--card); 
-  border:1px solid var(--ring); 
-  border-radius:14px; 
-  padding:16px; 
-  margin-bottom:16px; 
-}
+.card { background:var(--card); border:1px solid var(--ring); border-radius:14px; padding:16px; margin-bottom:16px; }
 
-/* Toolbar - Better Spacing */
+/* Toolbar - Better Spacing & Centering */
 .toolbar .row {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 12px;   /* Added space between rows */
+  margin-bottom: 14px;   /* Space between rows */
 }
 
-.row:last-child { margin-bottom: 0; }
+.toolbar .row:last-child { margin-bottom: 0; }
 
 .row > div { flex: 1; min-width: 160px; }
 
-/* Buttons - Centered & Actionable */
+/* Buttons - Centered */
 .btn {
   background: var(--btn);
   border: 1px solid var(--ring);
@@ -66,6 +58,8 @@ header { position:sticky; top:0; backdrop-filter:blur(8px); background:rgba(11,1
   transition: all 0.2s;
   font-weight: 500;
   text-align: center;
+  width: 100%;
+  max-width: 180px;
 }
 
 .btn:hover { background: var(--btn-hover); transform: translateY(-1px); }
@@ -74,43 +68,26 @@ header { position:sticky; top:0; backdrop-filter:blur(8px); background:rgba(11,1
 .btn.ok { background: var(--ok); color: white; }
 .btn.danger { background: var(--danger); color: white; }
 
-/* Table & Chart */
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 10px; border-bottom: 1px solid var(--ring); }
+/* Other Styles */
+.kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px,1fr)); gap:12px; }
+table { width:100%; border-collapse:collapse; }
+th, td { padding:10px; border-bottom:1px solid var(--ring); }
 
 .toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--card);
-  color: var(--text);
-  border: 1px solid var(--ring);
-  border-radius: 12px;
-  padding: 14px 20px;
-  display: none;
-  z-index: 2000;
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  background:var(--card); color:var(--text); border:1px solid var(--ring);
+  border-radius:12px; padding:14px 20px; display:none; z-index:2000;
 }
-.toast.show { display: block; }
+.toast.show { display:block; }
 
 /* Modals */
 .modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.85);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+  position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none;
+  align-items:center; justify-content:center; z-index:1000;
 }
-.modal-backdrop.show { display: flex; }
+.modal-backdrop.show { display:flex; }
 
 .modal {
-  background: var(--card);
-  border: 1px solid var(--ring);
-  border-radius: 14px;
-  width: 90%;
-  max-width: 860px;
-  max-height: 92vh;
-  overflow: auto;
+  background:var(--card); border:1px solid var(--ring); border-radius:14px;
+  width:90%; max-width:860px; max-height:92vh; overflow:auto;
 }
