@@ -1,7 +1,7 @@
-/* ====================== HEALTH TRACKER - Enhanced Theme Styles ====================== */
+/* ====================== HEALTH TRACKER - Enhanced Themes ====================== */
 
 :root {
-  /* Dark Mode (Default) */
+  /* === DARK MODE (Default) === */
   --bg: #0b1220;
   --card: #0e1628;
   --panel: #121a2a;
@@ -16,24 +16,26 @@
   --btn-hover: #223152;
   --input-bg: #0c1426;
   --border: #1f2a45;
+  --shadow: rgba(0,0,0,0.5);
 }
 
 [data-theme="light"] {
-  /* Light Mode - Improved Colors */
-  --bg: #f8f9fc;
+  /* === LIGHT MODE - Much Improved === */
+  --bg: #f8fafc;
   --card: #ffffff;
-  --panel: #f1f3f9;
-  --text: #1a2338;
+  --panel: #f1f5f9;
+  --text: #1e2937;
   --muted: #64748b;
   --accent: #2563eb;
   --danger: #ef4444;
   --warn: #f59e0b;
   --ok: #10b981;
   --ring: #cbd5e1;
-  --btn: #e2e8f0;
-  --btn-hover: #cbd5e1;
-  --input-bg: #f8fafc;
+  --btn: #f1f5f9;
+  --btn-hover: #e2e8f0;
+  --input-bg: #ffffff;
   --border: #e2e8f0;
+  --shadow: rgba(0,0,0,0.08);
 }
 
 /* Base Styles */
@@ -43,7 +45,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: Inter, system-ui, sans-serif;
-  transition: background 0.3s, color 0.3s;
+  transition: background 0.4s, color 0.4s;
+  line-height: 1.5;
 }
 
 header {
@@ -56,7 +59,7 @@ header {
 }
 
 [data-theme="light"] header {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(248, 250, 252, 0.95);
 }
 
 /* Cards */
@@ -65,11 +68,8 @@ header {
   border: 1px solid var(--ring);
   border-radius: 14px;
   padding: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-}
-
-[data-theme="light"] .card {
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 20px var(--shadow);
+  margin-bottom: 16px;
 }
 
 /* Buttons */
@@ -91,7 +91,7 @@ header {
 
 .btn:active { transform: scale(0.96); }
 
-.btn.ok { background: var(--ok); color: white; border-color: #34d399; }
+.btn.ok { background: var(--ok); color: white; }
 .btn.danger { background: var(--danger); color: white; }
 
 /* Inputs */
@@ -102,6 +102,19 @@ select, textarea {
   color: var(--text);
   border-radius: 10px;
   padding: 11px 12px;
+  width: 100%;
+}
+
+/* Toolbar Row Fix */
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.row > * {
+  flex: 1 1 160px;
+  min-width: 160px;
 }
 
 /* Table */
@@ -122,7 +135,7 @@ thead { background: var(--panel); }
   padding: 14px 20px;
   display: none;
   z-index: 2000;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 25px var(--shadow);
 }
 .toast.show { display: block; }
 
