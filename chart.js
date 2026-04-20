@@ -1,4 +1,4 @@
-// ====================== HEALTH TRACKER - WORKING chart.js ======================
+// ====================== HEALTH TRACKER - MATCHING ORIGINAL FORMAT ======================
 
 let entries = [];
 let chartInstance = null;
@@ -8,14 +8,18 @@ let currentEditIndex = -1;
 function showToast(msg) {
   const toast = document.getElementById('updateToast');
   if (toast) {
-    toast.textContent = msg;
+    toast.innerHTML = `<span>${msg}</span>`;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2800);
   }
 }
 
 window.UI = {
-  closeEntry: () => document.getElementById('entryModal').classList.remove('show')
+  closeEntry: () => document.getElementById('entryModal').classList.remove('show'),
+  closeFields: () => document.getElementById('fieldsModal').classList.remove('show'),
+  closeBulkRemove: () => document.getElementById('bulkRemoveModal').classList.remove('show'),
+  closeThresholds: () => document.getElementById('thModal').classList.remove('show'),
+  closeOptions: () => document.getElementById('optModal').classList.remove('show')
 };
 
 // Render Table
@@ -49,7 +53,7 @@ window.editEntry = function(i) {
 };
 
 window.deleteEntry = function(i) {
-  if (confirm('Delete entry?')) {
+  if (confirm('Delete this entry?')) {
     entries.splice(i, 1);
     renderTable();
     renderChart();
@@ -116,14 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('✅ Refreshed');
   });
 
-  // Theme Toggle
-  document.getElementById('btnToggleTheme').addEventListener('click', () => {
-    document.documentElement.setAttribute('data-theme', 
-      document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
-    showToast('Theme changed');
-  });
-
-  // Export CSV
+  // Save CSV
   document.getElementById('btnSaveCSV').addEventListener('click', () => {
     if (!entries.length) return showToast('No data');
     let csv = "Date,Glucose,Sys,Dia,Weight\n";
@@ -136,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('✅ CSV Exported');
   });
 
-  // Export PDF
+  // Save PDF
   document.getElementById('btnSavePDF').addEventListener('click', () => {
     if (typeof jspdf === "undefined") return showToast('PDF library not loaded');
     const { jsPDF } = jspdf;
@@ -147,14 +144,14 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('✅ PDF Exported');
   });
 
-  // Other buttons (open modals)
-  document.getElementById('btnFields')?.addEventListener('click', () => 
+  // Other Modals
+  document.getElementById('btnFields').addEventListener('click', () => 
     document.getElementById('fieldsModal').classList.add('show'));
-  
-  document.getElementById('btnThresholds')?.addEventListener('click', () => 
+
+  document.getElementById('btnThresholds').addEventListener('click', () => 
     document.getElementById('thModal').classList.add('show'));
-  
-  document.getElementById('btnOptions')?.addEventListener('click', () => 
+
+  document.getElementById('btnOptions').addEventListener('click', () => 
     document.getElementById('optModal').classList.add('show'));
 
   // Sample Data
@@ -167,5 +164,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderTable();
   renderChart();
-  showToast('✅ PWA Fully Working');
+  showToast('✅ App Loaded - Buttons Active');
 });
